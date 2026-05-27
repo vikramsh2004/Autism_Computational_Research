@@ -64,7 +64,9 @@ I_GABA_TRN_TC = zeros(1, nt);
 
 %% External input
 I_ext_TC = zeros(1, nt);
-I_ext_TC(2000:5000) = 10; % brief ext pulse into TC
+% Slightly longer, moderate pulse places TC in a regime where removal of
+% TRN inhibition produces a clearer increase in spike count.
+I_ext_TC(2000:7000) = 8;
 
 %% Main update loop
 for k = 1:nt-1
@@ -117,6 +119,10 @@ end
 % Current calculations
 I_AMPA_TC_TRN(end) = g_AMPA_TC_TRN * s_AMPA_TC_TRN(end) * (E_AMPA - v_TRN(end));
 I_GABA_TRN_TC(end) = g_GABA_TRN_TC * s_GABA_TRN_TC(end) * (E_GABA - v_TC(end));
+
+% TC spike count (upward crossing through 0 mV)
+tc_spike_idx = find(v_TC(1:end-1) < 0 & v_TC(2:end) >= 0);
+fprintf('TC spike count (TRN deactivated): %d\n', numel(tc_spike_idx));
 
 %% Plotting
 figure;
