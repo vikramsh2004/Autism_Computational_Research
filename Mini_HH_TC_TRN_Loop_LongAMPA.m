@@ -67,8 +67,8 @@ I_AMPA_TC_TRN = zeros(1, nt);
 I_GABA_TRN_TC = zeros(1, nt);
 
 %% Initialize HH gates
-[m_TC(1), h_TC(1), n_TC(1)] = init_gates(v_TC(1));
-[m_TRN(1), h_TRN(1), n_TRN(1)] = init_gates(v_TRN(1));
+[m_TC(1), h_TC(1), n_TC(1)] = init_gates_longampa(v_TC(1));
+[m_TRN(1), h_TRN(1), n_TRN(1)] = init_gates_longampa(v_TRN(1));
 
 %% External input
 I_ext_TC = zeros(1, nt);
@@ -99,13 +99,13 @@ for k = 1:nt-1
    I_GABA_TRN_TC(k) = g_GABA_TRN_TC * s_GABA_TRN_TC(k) * (E_GABA - v_TC(k));
 
    % Update HH gates: TC
-   [am,bm,ah,bh,an,bn] = hh_rates(v_TC(k));
+   [am,bm,ah,bh,an,bn] = hh_rates_longampa(v_TC(k));
    m_TC(k+1) = m_TC(k) + dt * (am*(1-m_TC(k)) - bm*m_TC(k));
    h_TC(k+1) = h_TC(k) + dt * (ah*(1-h_TC(k)) - bh*h_TC(k));
    n_TC(k+1) = n_TC(k) + dt * (an*(1-n_TC(k)) - bn*n_TC(k));
 
    % Update HH gates: TRN
-   [am,bm,ah,bh,an,bn] = hh_rates(v_TRN(k));
+   [am,bm,ah,bh,an,bn] = hh_rates_longampa(v_TRN(k));
    m_TRN(k+1) = m_TRN(k) + dt * (am*(1-m_TRN(k)) - bm*m_TRN(k));
    h_TRN(k+1) = h_TRN(k) + dt * (ah*(1-h_TRN(k)) - bh*h_TRN(k));
    n_TRN(k+1) = n_TRN(k) + dt * (an*(1-n_TRN(k)) - bn*n_TRN(k));
@@ -167,23 +167,23 @@ ylabel('s_{AMPA}')
 grid on
 
 %% Helper functions
-function [m0,h0,n0] = init_gates(V)
-    [am,bm,ah,bh,an,bn] = hh_rates(V);
+function [m0,h0,n0] = init_gates_longampa(V)
+    [am,bm,ah,bh,an,bn] = hh_rates_longampa(V);
     m0 = am/(am+bm);
     h0 = ah/(ah+bh);
     n0 = an/(an+bn);
 end
 
-function [am,bm,ah,bh,an,bn] = hh_rates(V)
-    am = alpha_m(V);
-    bm = beta_m(V);
-    ah = alpha_h(V);
-    bh = beta_h(V);
-    an = alpha_n(V);
-    bn = beta_n(V);
+function [am,bm,ah,bh,an,bn] = hh_rates_longampa(V)
+    am = alpha_m_longampa(V);
+    bm = beta_m_longampa(V);
+    ah = alpha_h_longampa(V);
+    bh = beta_h_longampa(V);
+    an = alpha_n_longampa(V);
+    bn = beta_n_longampa(V);
 end
 
-function val = alpha_m(V)
+function val = alpha_m_longampa(V)
     x = V + 40;
     if abs(x) < 1e-6
         val = 1.0;
@@ -192,19 +192,19 @@ function val = alpha_m(V)
     end
 end
 
-function val = beta_m(V)
+function val = beta_m_longampa(V)
     val = 4*exp(-(V+65)/18);
 end
 
-function val = alpha_h(V)
+function val = alpha_h_longampa(V)
     val = 0.07*exp(-(V+65)/20);
 end
 
-function val = beta_h(V)
+function val = beta_h_longampa(V)
     val = 1/(1+exp(-(V+35)/10));
 end
 
-function val = alpha_n(V)
+function val = alpha_n_longampa(V)
     x = V + 55;
     if abs(x) < 1e-6
         val = 0.1;
@@ -213,6 +213,6 @@ function val = alpha_n(V)
     end
 end
 
-function val = beta_n(V)
+function val = beta_n_longampa(V)
     val = 0.125*exp(-(V+65)/80);
 end
