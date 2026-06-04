@@ -63,6 +63,7 @@ figure('Name','GABA_B Components','Color','w');
 
 subplot(5,1,1)
 plot(time, nt_GABAb, 'Color', [0.2 0.2 0.2], 'LineWidth', 1.5)
+hold on
 title('GABA_B neurotransmitter pulse')
 xlabel('Time (ms)')
 ylabel('[GABA]')
@@ -70,6 +71,7 @@ grid on
 
 subplot(5,1,2)
 plot(time, r_GABAb, 'Color', [0.1 0.5 0.2], 'LineWidth', 1.5)
+hold on
 title('GABA_B receptor activation')
 xlabel('Time (ms)')
 ylabel('r_{GABA_B}')
@@ -77,6 +79,7 @@ grid on
 
 subplot(5,1,3)
 plot(time, G_GABAb, 'Color', [0.9 0.5 0.1], 'LineWidth', 1.5)
+hold on
 title('G-protein activation')
 xlabel('Time (ms)')
 ylabel('G')
@@ -84,6 +87,7 @@ grid on
 
 subplot(5,1,4)
 plot(time, GABAb_open, 'Color', [0.3 0.1 0.7], 'LineWidth', 1.5)
+hold on
 title('GABA_B K^+ channel open fraction')
 xlabel('Time (ms)')
 ylabel('Open fraction')
@@ -91,6 +95,7 @@ grid on
 
 subplot(5,1,5)
 plot(time, I_GABAb, 'Color', [0.3 0.1 0.7], 'LineWidth', 1.5)
+hold on
 yline(0,'k:')
 title('GABA_B IPSC')
 xlabel('Time (ms)')
