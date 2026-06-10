@@ -62,14 +62,16 @@ fprintf('Charge transfer: %.6g current*ms\n', charge_transfer);
 figure_name = sprintf('GABAa Dynamics Only - %s', datestr(now, 'HH:MM:SS'));
 figure('Name', figure_name, 'Color', 'w');
 
-subplot(4,1,1)
+subplot(3,1,1)
+hold on
 plot(time, nt_GABAa, 'Color', [0.1 0.5 0.1], 'LineWidth', 1.5)
 title('GABAa neurotransmitter pulse')
 xlabel('Time (ms)')
 ylabel('[NT]')
 grid on
 
-subplot(4,1,2)
+subplot(3,1,2)
+hold on
 plot(time, r_GABAa, 'b', 'LineWidth', 1.5)
 title('GABAa receptor open fraction')
 xlabel('Time (ms)')
@@ -77,18 +79,11 @@ ylabel('r_{GABAa}')
 ylim([0 1])
 grid on
 
-subplot(4,1,3)
+subplot(3,1,3)
+hold on
 plot(time, I_GABAa, 'b', 'LineWidth', 1.5)
 yline(0,'k:')
 title('GABAa IPSC')
 xlabel('Time (ms)')
 ylabel('Current')
-grid on
-
-subplot(4,1,4)
-plot(time, cumtrapz(time, I_GABAa), 'k', 'LineWidth', 1.5)
-yline(0,'k:')
-title('Cumulative GABAa charge transfer')
-xlabel('Time (ms)')
-ylabel('Current*ms')
 grid on
