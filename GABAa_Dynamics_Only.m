@@ -9,7 +9,6 @@ tspan = 500; % ms
 dt = 0.01; % time step for Euler method
 loop = ceil(tspan/dt) + 1; % number of time samples
 time = (0:loop-1).*dt; % time vector in ms
-overlay_runs = true; % true: hold repeated runs on one figure; false: open a new figure each run
 
 %% Postsynaptic voltage used to calculate current
 v_post_GABA = -50; % mV
@@ -60,60 +59,36 @@ fprintf('Peak GABAa current: %.6g at %.2f ms\n', peak_current, peak_time);
 fprintf('Charge transfer: %.6g current*ms\n', charge_transfer);
 
 %% Plot GABAa dynamics
-run_label = sprintf('g=%.4g, Vpost=%.1f, onset=%.1f ms', ...
-    g_GABAa, v_post_GABA, GABA_start_ms);
-
-if overlay_runs
-    fig = findobj('Type','figure','Name','GABAa Dynamics Only');
-    if isempty(fig)
-        figure('Name','GABAa Dynamics Only','Color','w');
-    else
-        figure(fig(1));
-    end
-else
-    figure('Name','GABAa Dynamics Only','Color','w');
-end
+figure_name = sprintf('GABAa Dynamics Only - %s', datestr(now, 'HH:MM:SS'));
+figure('Name', figure_name, 'Color', 'w');
 
 subplot(4,1,1)
-hold on
-plot(time, nt_GABAa, 'Color', [0.1 0.5 0.1], 'LineWidth', 1.5, ...
-    'DisplayName', run_label)
+plot(time, nt_GABAa, 'Color', [0.1 0.5 0.1], 'LineWidth', 1.5)
 title('GABAa neurotransmitter pulse')
 xlabel('Time (ms)')
 ylabel('[NT]')
-legend('show','Location','best')
 grid on
 
 subplot(4,1,2)
-hold on
-plot(time, r_GABAa, 'LineWidth', 1.5, 'DisplayName', run_label)
+plot(time, r_GABAa, 'b', 'LineWidth', 1.5)
 title('GABAa receptor open fraction')
 xlabel('Time (ms)')
 ylabel('r_{GABAa}')
 ylim([0 1])
-legend('show','Location','best')
 grid on
 
 subplot(4,1,3)
-hold on
-plot(time, I_GABAa, 'LineWidth', 1.5, 'DisplayName', run_label)
-if isempty(findobj(gca, 'Tag', 'GABAaZeroLine'))
-    yline(0,'k:', 'HandleVisibility','off', 'Tag', 'GABAaZeroLine')
-end
+plot(time, I_GABAa, 'b', 'LineWidth', 1.5)
+yline(0,'k:')
 title('GABAa IPSC')
 xlabel('Time (ms)')
 ylabel('Current')
-legend('show','Location','best')
 grid on
 
 subplot(4,1,4)
-hold on
-plot(time, cumtrapz(time, I_GABAa), 'LineWidth', 1.5, 'DisplayName', run_label)
-if isempty(findobj(gca, 'Tag', 'GABAaZeroLine'))
-    yline(0,'k:', 'HandleVisibility','off', 'Tag', 'GABAaZeroLine')
-end
+plot(time, cumtrapz(time, I_GABAa), 'k', 'LineWidth', 1.5)
+yline(0,'k:')
 title('Cumulative GABAa charge transfer')
 xlabel('Time (ms)')
 ylabel('Current*ms')
-legend('show','Location','best')
 grid on
