@@ -12,18 +12,19 @@ S = linspace(0, 5*S_half, 1000);
 %% Bounded Hill/open-fraction term
 GABAb_open = (S.^n_GABAb) ./ (S.^n_GABAb + KD_GABAb);
 GABAb_open = min(max(GABAb_open, 0), 1);
+GABAb_percent_open = 100 * GABAb_open;
 
 %% Plot S^n/(S^n+Kd)
 figure('Name','Bounded GABA_B Hill Term','Color','w');
 
-plot(S, GABAb_open, 'Color', [0.3 0.1 0.7], 'LineWidth', 1.5)
+plot(S, GABAb_percent_open, 'Color', [0.3 0.1 0.7], 'LineWidth', 1.5)
 hold on
-yline(1, 'k:', 'Upper bound = 1');
+yline(100, 'k:', 'Upper bound = 100%');
 xline(S_half, 'k--', 'Half activation');
 hold off
 
 title('Bounded GABA_B open fraction: S^n/(S^n+K_d)')
 xlabel('S')
-ylabel('S^n/(S^n+K_d)')
-ylim([0 1.05])
+ylabel('GABA_B channels open (%)')
+ylim([0 105])
 grid on
