@@ -76,7 +76,7 @@ K4_GABAb = 0.034;
 KD_GABAb = 0.08; % normalized G-protein half-activation for this demo
 n_GABAb = 4;
 E_GABAb = -95;
-g_GABAb_TRN_TC = 0.16; % mS/cm^2
+g_GABAb_TRN_TC = 0.04; % mS/cm^2
 
 %% State variables
 v_TC = -65 * ones(1, nt);
