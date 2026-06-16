@@ -6,8 +6,8 @@
 %
 % Synaptic kinetics are adapted from the Destexhe-style receptor equations
 % in the reference script. Intrinsic membrane dynamics use a compact
-% Hodgkin-Huxley model so each neuron can spike and trigger transmitter
-% release into the opposite side of the microcircuit.
+% Hodgkin-Huxley model so each neuron can spike while transmitter release can
+% be run as a staggered visualization protocol or as spike-triggered release.
 
 clear; close all; clc
 
@@ -30,19 +30,34 @@ gNa_TRN = 100; ENa_TRN = 50;
 gK_TRN = 30; EK_TRN = -77;
 gL_TRN = 0.25; EL_TRN = -58;
 
-spike_threshold = 0; % mV, upward crossing triggers transmitter release
+spike_threshold = 0; % mV, upward crossing used for spike-triggered release
 
 %% External drive
-% Brief TC stimuli initiate the reciprocal loop. A small TRN bias makes the
-% inhibitory neuron responsive to TC excitation without forcing continuous
-% firing.
+% Staggered stimuli make the two directions of the loop easier to see:
+% TC drive evokes TC -> TRN excitation first, and later TRN drive evokes
+% TRN -> TC inhibition after the excitatory response has separated in time.
 I_ext_TC = zeros(1, nt);
-I_ext_TRN = 0.8 * ones(1, nt);
+I_ext_TRN = zeros(1, nt);
 
-I_ext_TC(time >= 20 & time < 45) = 10;
-I_ext_TC(time >= 155 & time < 180) = 8;
+I_ext_TC(time >= 20 & time < 38) = 10;
+I_ext_TRN(time >= 90 & time < 108) = 9;
+I_ext_TC(time >= 170 & time < 188) = 8;
+I_ext_TRN(time >= 235 & time < 253) = 8;
+
+% By default, the demo uses staggered presynaptic release times so the
+% glutamatergic and GABAergic components are visually separated. Set this
+% false to make transmitter release occur only from threshold-crossing
+% presynaptic spikes.
+use_staggered_release_protocol = true;
+TC_release_times = [25 175]; % ms, TC -> TRN AMPA/NMDA release
+TRN_release_times = [95 235]; % ms, TRN -> TC GABA_A/GABA_B release
 
 %% Synaptic constants
+% The receptor kinetics, neurotransmitter pulse durations, reversal
+% potentials, and Mg2+ value below use the Destexhe values from the
+% reference script. Synaptic conductances are scaled for this two-cell
+% conductance-based demo so the postsynaptic responses are visible.
+
 % TC -> TRN excitation
 Cmax_AMPA = 1;
 Cdur_AMPA = 1; % ms
@@ -73,7 +88,7 @@ K1_GABAb = 0.09;
 K2_GABAb = 0.0012;
 K3_GABAb = 0.18;
 K4_GABAb = 0.034;
-KD_GABAb = 0.08; % normalized G-protein half-activation for this demo
+KD_GABAb = 0.08; % normalized G-protein half-activation for visibility
 n_GABAb = 4;
 E_GABAb = -95;
 g_GABAb_TRN_TC = 0.04; % mS/cm^2
@@ -112,6 +127,10 @@ I_syn_TC = zeros(1, nt);
 
 TC_spike_events = zeros(1, nt);
 TRN_spike_events = zeros(1, nt);
+TC_release_events = zeros(1, nt);
+TRN_release_events = zeros(1, nt);
+TC_scheduled_release_events = zeros(1, nt);
+TRN_scheduled_release_events = zeros(1, nt);
 
 tc_release_AMPA_steps = 0;
 tc_release_NMDA_steps = 0;
@@ -123,17 +142,49 @@ NMDA_pulse_steps = max(1, round(Cdur_NMDA / dt));
 GABAa_pulse_steps = max(1, round(Cdur_GABAa / dt));
 GABAb_pulse_steps = max(1, round(Cdur_GABAb / dt));
 
+for release_time = TC_release_times
+    [~, release_idx] = min(abs(time - release_time));
+    TC_scheduled_release_events(release_idx) = 1;
+end
+
+for release_time = TRN_release_times
+    [~, release_idx] = min(abs(time - release_time));
+    TRN_scheduled_release_events(release_idx) = 1;
+end
+
 %% Euler method
 for k = 1:nt-1
-    % Spike-triggered neurotransmitter release.
-    if k > 1 && v_TC(k-1) < spike_threshold && v_TC(k) >= spike_threshold
+    % Track spikes separately from transmitter release. In the default
+    % visualization protocol, release is scheduled so excitation and
+    % inhibition are staggered; disabling the protocol restores purely
+    % spike-triggered release.
+    TC_spike = k > 1 && v_TC(k-1) < spike_threshold && v_TC(k) >= spike_threshold;
+    TRN_spike = k > 1 && v_TRN(k-1) < spike_threshold && v_TRN(k) >= spike_threshold;
+
+    if TC_spike
         TC_spike_events(k) = 1;
+    end
+
+    if TRN_spike
+        TRN_spike_events(k) = 1;
+    end
+
+    if use_staggered_release_protocol
+        TC_release_triggered = TC_scheduled_release_events(k) == 1;
+        TRN_release_triggered = TRN_scheduled_release_events(k) == 1;
+    else
+        TC_release_triggered = TC_spike;
+        TRN_release_triggered = TRN_spike;
+    end
+
+    if TC_release_triggered
+        TC_release_events(k) = 1;
         tc_release_AMPA_steps = AMPA_pulse_steps;
         tc_release_NMDA_steps = NMDA_pulse_steps;
     end
 
-    if k > 1 && v_TRN(k-1) < spike_threshold && v_TRN(k) >= spike_threshold
-        TRN_spike_events(k) = 1;
+    if TRN_release_triggered
+        TRN_release_events(k) = 1;
         trn_release_GABAa_steps = GABAa_pulse_steps;
         trn_release_GABAb_steps = GABAb_pulse_steps;
     end
@@ -234,6 +285,8 @@ I_syn_TC(end) = I_GABAa_TRN_TC(end) + I_GABAb_TRN_TC(end);
 %% Summary in command window
 fprintf('TC spikes:  %d\n', sum(TC_spike_events));
 fprintf('TRN spikes: %d\n', sum(TRN_spike_events));
+fprintf('TC -> TRN release pulses:  %d\n', sum(TC_release_events));
+fprintf('TRN -> TC release pulses: %d\n', sum(TRN_release_events));
 fprintf('Peak TC -> TRN AMPA current:  %.3f\n', max(I_AMPA_TC_TRN));
 fprintf('Peak TC -> TRN NMDA current:  %.3f\n', max(I_NMDA_TC_TRN));
 fprintf('Peak TRN -> TC GABA_A current: %.3f\n', min(I_GABAa_TRN_TC));
@@ -264,14 +317,14 @@ legend('Location', 'best')
 grid on
 
 subplot(3, 1, 3)
-stem(time(TC_spike_events == 1), ones(1, sum(TC_spike_events)), ...
-    'r', 'Marker', 'none', 'DisplayName', 'TC spikes')
+stem(time(TC_release_events == 1), ones(1, sum(TC_release_events)), ...
+    'r', 'Marker', 'none', 'DisplayName', 'TC -> TRN release')
 hold on
-stem(time(TRN_spike_events == 1), -ones(1, sum(TRN_spike_events)), ...
-    'b', 'Marker', 'none', 'DisplayName', 'TRN spikes')
-title('Spike events that trigger transmitter release')
+stem(time(TRN_release_events == 1), -ones(1, sum(TRN_release_events)), ...
+    'b', 'Marker', 'none', 'DisplayName', 'TRN -> TC release')
+title('Staggered transmitter release events')
 xlabel('Time (ms)')
-ylabel('Spike event')
+ylabel('Release event')
 ylim([-1.5 1.5])
 legend('Location', 'best')
 grid on

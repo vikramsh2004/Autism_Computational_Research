@@ -20,9 +20,14 @@ Open MATLAB and run:
 TRN_Thalamic_Microcircuit
 ```
 
+By default, the script uses a staggered release protocol so TC-to-TRN
+AMPA/NMDA pulses occur before TRN-to-TC GABA_A/GABA_B pulses. In the script,
+set `use_staggered_release_protocol = false` to make transmitter release occur
+only from presynaptic threshold-crossing spikes.
+
 The script prints a short spike/current summary and opens several figures:
 
-1. External drive, membrane voltages, and spike-triggered release events.
+1. External drive, membrane voltages, and staggered release events.
 2. TC-to-TRN glutamate and TRN-to-TC GABA neurotransmitter pulses.
 3. AMPA/NMDA and GABA_A/GABA_B receptor or channel state variables.
 4. Excitatory and inhibitory synaptic current components.
