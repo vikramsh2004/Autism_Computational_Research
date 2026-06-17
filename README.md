@@ -11,6 +11,9 @@ microcircuit simulations.
   thalamic relay neuron excites TRN through AMPA and NMDA synaptic components,
   and the TRN neuron inhibits the thalamic relay neuron through GABA_A and
   GABA_B synaptic components.
+- `TRN_TC_Delayed_IPSP_Experiment.m` - compares a normal TRN-to-TC IPSP with a
+  delayed IPSP to test whether TC activity still decreases after delayed
+  inhibition arrives.
 
 ## Running the reciprocal microcircuit
 
@@ -32,3 +35,21 @@ The script prints a short spike/current summary and opens several figures:
 3. AMPA/NMDA and GABA_A/GABA_B receptor or channel state variables.
 4. Excitatory and inhibitory synaptic current components.
 5. A phase-plane view of the coupled TC/TRN voltage trajectory.
+
+## Running the delayed IPSP experiment
+
+Open MATLAB and run:
+
+```matlab
+TRN_TC_Delayed_IPSP_Experiment
+```
+
+Change `ipsp_delay_ms` near the top of the script to test a different delay
+between TRN release and GABA_A/GABA_B arrival at the TC cell. The script
+compares a 0 ms delay condition against the delayed condition, then plots:
+
+1. TC voltage with no-delay versus delayed inhibition.
+2. TRN release events and delayed IPSP arrival times.
+3. GABA_A/GABA_B inhibitory current components at the TC cell.
+4. Mean TC voltage and TC spike counts before versus after IPSP arrival.
+5. Zoomed TC responses around each delayed IPSP.
