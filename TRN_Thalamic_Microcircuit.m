@@ -39,10 +39,15 @@ spike_threshold = 0; % mV, upward crossing used for spike-triggered release
 I_ext_TC = zeros(1, nt);
 I_ext_TRN = zeros(1, nt);
 
-I_ext_TC(time >= 20 & time < 38) = 10;
-I_ext_TRN(time >= 90 & time < 108) = 9;
-I_ext_TC(time >= 170 & time < 188) = 8;
-I_ext_TRN(time >= 235 & time < 253) = 8;
+TC_drive_early = time >= 20 & time < 38;
+TC_drive_late = time >= 170 & time < 188;
+TRN_drive_early = time >= 90 & time < 108;
+TRN_drive_late = time >= 235 & time < 253;
+
+I_ext_TC(TC_drive_early) = 10;
+I_ext_TC(TC_drive_late) = 8;
+I_ext_TRN(TRN_drive_early) = 9;
+I_ext_TRN(TRN_drive_late) = 8;
 
 % By default, the demo uses staggered presynaptic release times so the
 % glutamatergic and GABAergic components are visually separated. Set this
@@ -125,12 +130,12 @@ I_GABAb_TRN_TC = zeros(1, nt);
 I_syn_TRN = zeros(1, nt);
 I_syn_TC = zeros(1, nt);
 
-TC_spike_events = zeros(1, nt);
-TRN_spike_events = zeros(1, nt);
-TC_release_events = zeros(1, nt);
-TRN_release_events = zeros(1, nt);
-TC_scheduled_release_events = zeros(1, nt);
-TRN_scheduled_release_events = zeros(1, nt);
+TC_spike_events = false(1, nt);
+TRN_spike_events = false(1, nt);
+TC_release_events = false(1, nt);
+TRN_release_events = false(1, nt);
+TC_scheduled_release_events = event_mask(time, TC_release_times);
+TRN_scheduled_release_events = event_mask(time, TRN_release_times);
 
 tc_release_AMPA_steps = 0;
 tc_release_NMDA_steps = 0;
@@ -142,16 +147,6 @@ NMDA_pulse_steps = max(1, round(Cdur_NMDA / dt));
 GABAa_pulse_steps = max(1, round(Cdur_GABAa / dt));
 GABAb_pulse_steps = max(1, round(Cdur_GABAb / dt));
 
-for release_time = TC_release_times
-    [~, release_idx] = min(abs(time - release_time));
-    TC_scheduled_release_events(release_idx) = 1;
-end
-
-for release_time = TRN_release_times
-    [~, release_idx] = min(abs(time - release_time));
-    TRN_scheduled_release_events(release_idx) = 1;
-end
-
 %% Euler method
 for k = 1:nt-1
     % Track spikes separately from transmitter release. In the default
@@ -161,53 +156,42 @@ for k = 1:nt-1
     TC_spike = k > 1 && v_TC(k-1) < spike_threshold && v_TC(k) >= spike_threshold;
     TRN_spike = k > 1 && v_TRN(k-1) < spike_threshold && v_TRN(k) >= spike_threshold;
 
-    if TC_spike
-        TC_spike_events(k) = 1;
-    end
+    TC_spike_events(k) = TC_spike;
+    TRN_spike_events(k) = TRN_spike;
 
-    if TRN_spike
-        TRN_spike_events(k) = 1;
-    end
+    TC_release_triggered = (use_staggered_release_protocol && ...
+        TC_scheduled_release_events(k)) || ...
+        (~use_staggered_release_protocol && TC_spike);
+    TRN_release_triggered = (use_staggered_release_protocol && ...
+        TRN_scheduled_release_events(k)) || ...
+        (~use_staggered_release_protocol && TRN_spike);
 
-    if use_staggered_release_protocol
-        TC_release_triggered = TC_scheduled_release_events(k) == 1;
-        TRN_release_triggered = TRN_scheduled_release_events(k) == 1;
-    else
-        TC_release_triggered = TC_spike;
-        TRN_release_triggered = TRN_spike;
-    end
+    TC_release_events(k) = TC_release_triggered;
+    TRN_release_events(k) = TRN_release_triggered;
 
-    if TC_release_triggered
-        TC_release_events(k) = 1;
-        tc_release_AMPA_steps = AMPA_pulse_steps;
-        tc_release_NMDA_steps = NMDA_pulse_steps;
-    end
+    tc_release_AMPA_steps = max(tc_release_AMPA_steps, ...
+        AMPA_pulse_steps * TC_release_triggered);
+    tc_release_NMDA_steps = max(tc_release_NMDA_steps, ...
+        NMDA_pulse_steps * TC_release_triggered);
+    trn_release_GABAa_steps = max(trn_release_GABAa_steps, ...
+        GABAa_pulse_steps * TRN_release_triggered);
+    trn_release_GABAb_steps = max(trn_release_GABAb_steps, ...
+        GABAb_pulse_steps * TRN_release_triggered);
 
-    if TRN_release_triggered
-        TRN_release_events(k) = 1;
-        trn_release_GABAa_steps = GABAa_pulse_steps;
-        trn_release_GABAb_steps = GABAb_pulse_steps;
-    end
+    AMPA_pulse_active = tc_release_AMPA_steps > 0;
+    NMDA_pulse_active = tc_release_NMDA_steps > 0;
+    GABAa_pulse_active = trn_release_GABAa_steps > 0;
+    GABAb_pulse_active = trn_release_GABAb_steps > 0;
 
-    if tc_release_AMPA_steps > 0
-        nt_TC_to_TRN_AMPA(k) = Cmax_AMPA;
-        tc_release_AMPA_steps = tc_release_AMPA_steps - 1;
-    end
+    nt_TC_to_TRN_AMPA(k) = Cmax_AMPA * AMPA_pulse_active;
+    nt_TC_to_TRN_NMDA(k) = Cmax_NMDA * NMDA_pulse_active;
+    nt_TRN_to_TC_GABAa(k) = Cmax_GABAa * GABAa_pulse_active;
+    nt_TRN_to_TC_GABAb(k) = Cmax_GABAb * GABAb_pulse_active;
 
-    if tc_release_NMDA_steps > 0
-        nt_TC_to_TRN_NMDA(k) = Cmax_NMDA;
-        tc_release_NMDA_steps = tc_release_NMDA_steps - 1;
-    end
-
-    if trn_release_GABAa_steps > 0
-        nt_TRN_to_TC_GABAa(k) = Cmax_GABAa;
-        trn_release_GABAa_steps = trn_release_GABAa_steps - 1;
-    end
-
-    if trn_release_GABAb_steps > 0
-        nt_TRN_to_TC_GABAb(k) = Cmax_GABAb;
-        trn_release_GABAb_steps = trn_release_GABAb_steps - 1;
-    end
+    tc_release_AMPA_steps = max(tc_release_AMPA_steps - AMPA_pulse_active, 0);
+    tc_release_NMDA_steps = max(tc_release_NMDA_steps - NMDA_pulse_active, 0);
+    trn_release_GABAa_steps = max(trn_release_GABAa_steps - GABAa_pulse_active, 0);
+    trn_release_GABAb_steps = max(trn_release_GABAb_steps - GABAb_pulse_active, 0);
 
     % TC -> TRN AMPA receptor open fraction.
     dAMPA_rdt = alpha_AMPA * nt_TC_to_TRN_AMPA(k) * (1 - r_AMPA_TRN(k)) ...
@@ -298,7 +282,7 @@ figure('Name', 'TRN-Thalamic Microcircuit: Voltages and Drive', 'Color', 'w');
 subplot(3, 1, 1)
 plot(time, I_ext_TC, 'k', 'LineWidth', 1.2, 'DisplayName', 'TC drive')
 hold on
-plot(time, I_ext_TRN, 'Color', [0.4 0.4 0.4], 'LineWidth', 1.2, 'DisplayName', 'TRN bias')
+plot(time, I_ext_TRN, 'Color', [0.4 0.4 0.4], 'LineWidth', 1.2, 'DisplayName', 'TRN drive')
 title('External input currents')
 xlabel('Time (ms)')
 ylabel('I_{ext}')
@@ -317,10 +301,10 @@ legend('Location', 'best')
 grid on
 
 subplot(3, 1, 3)
-stem(time(TC_release_events == 1), ones(1, sum(TC_release_events)), ...
+stem(time(TC_release_events), ones(1, sum(TC_release_events)), ...
     'r', 'Marker', 'none', 'DisplayName', 'TC -> TRN release')
 hold on
-stem(time(TRN_release_events == 1), -ones(1, sum(TRN_release_events)), ...
+stem(time(TRN_release_events), -ones(1, sum(TRN_release_events)), ...
     'b', 'Marker', 'none', 'DisplayName', 'TRN -> TC release')
 title('Staggered transmitter release events')
 xlabel('Time (ms)')
@@ -481,6 +465,17 @@ end
 
 function val = clamp01(x)
     val = min(max(x, 0), 1);
+end
+
+function events = event_mask(time, event_times)
+    events = false(size(time));
+
+    for event_time = event_times
+        if event_time >= time(1) && event_time <= time(end)
+            [~, event_idx] = min(abs(time - event_time));
+            events(event_idx) = true;
+        end
+    end
 end
 
 function val = magnesium_block(V, mg)
