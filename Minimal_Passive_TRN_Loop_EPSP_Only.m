@@ -29,7 +29,7 @@ gK_TC = 36;  EK_TC = -77;
 gL_TC = 0.3; EL_TC = -54.4;
 
 % Low-threshold T-type calcium channel in the TC relay neuron.
-gT_TC = 2.0;   % mS/cm^2; increase/decrease to tune rebound burst strength
+gT_TC = 4.0;   % mS/cm^2; increase/decrease to tune rebound burst strength
 ECa_TC = 120;  % mV
 
 % TRN neuron
@@ -70,8 +70,10 @@ g_AMPA_Ctx_TC  = 0.16; g_NMDA_Ctx_TC  = 0.11;
 g_AMPA_Ctx_TRN = 0.14; g_NMDA_Ctx_TRN = 0.09;
 
 % Strong TRN -> TC inhibition primes the T-current in the TC relay cell.
-g_GABAa_TRN_TC = 0.35;
-g_GABAb_TRN_TC = 0.08;
+% GABA_A provides fast hyperpolarization; modest GABA_B avoids residual
+% inhibition masking the rebound after the TRN drive ends.
+g_GABAa_TRN_TC = 4.0;
+g_GABAb_TRN_TC = 0.05;
 
 %% State variables preallocation
 v_Ctx = -65 * ones(1, nt);
@@ -304,15 +306,15 @@ end
 function [mT_inf, hT_inf, tau_mT, tau_hT] = ttype_rates(V)
     [mT_inf, hT_inf] = ttype_steady_state(V);
 
-    % Huguenard/McCormick-style low-threshold Ca kinetics in ms. Activation
-    % is fast; inactivation recovers slowly during hyperpolarization.
+    % Low-threshold Ca kinetics in ms. Activation is fast; availability
+    % recovers on the timescale of the inhibition epoch in this demo.
     tau_mT = 0.612 + 1 / (exp(-(V + 132) / 16.7) + exp((V + 16.8) / 18.2));
-    tau_hT = 30.8 + (211.4 + exp((V + 113.2) / 5)) / (1 + exp((V + 84) / 3.2));
+    tau_hT = 20 + 80 / (1 + exp((V + 78) / 4.0));
 end
 
 function [mT_inf, hT_inf] = ttype_steady_state(V)
     mT_inf = 1 / (1 + exp(-(V + 59) / 6.2));
-    hT_inf = 1 / (1 + exp((V + 83) / 4.0));
+    hT_inf = 1 / (1 + exp((V + 78) / 4.0));
 end
 
 function val = alpha_m(V), x = V + 40; if abs(x) < 1e-6, val = 1.0; else, val = 0.1 * x / (1 - exp(-x / 10)); end; end
