@@ -361,26 +361,23 @@ function val = gprotein_channel_open(G, n_sites, KD), val = (G^n_sites) / (G^n_s
 
 % T-type calcium channel kinetics
 function val = mInf_T(V)
-    val = 1 / (1 + exp(-(V + 52) / 7.4));
+    val = 1 ./ (1 + exp(-(V + 52) / 7.4));
 end
 
 function val = hInf_T(V)
-    val = 1 / (1 + exp((V + 80) / 5));
+    val = 1 ./ (1 + exp((V + 80) / 5));
 end
 
 function val = tauH_T(V)
-    if V < -80
-        val = exp((V + 467) / 66.6);
-    else
-        val = 28 + exp(-(V + 22) / 10.5);
-    end
+    val = 28 + exp(-(V + 22) / 10.5);
+    val(V < -80) = exp((V(V < -80) + 467) / 66.6);
 end
 
 % H-current kinetics (Destexhe 1993)
 function val = rInf_H(V)
-    val = 1 / (1 + exp((V + 75) / 5.5));
+    val = 1 ./ (1 + exp((V + 75) / 5.5));
 end
 
 function tau = tauR_H(V)
-    tau = 20 + 200 / (exp((V + 75) / 10) + exp(-(V + 75) / 10));
+    tau = 20 + 200 ./ (exp((V + 75) / 10) + exp(-(V + 75) / 10));
 end
