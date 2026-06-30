@@ -1,4 +1,4 @@
-%% Corticothalamic-Thalamocortical 3-Neuron Microcircuit with T-type Ca2+ Rebound
+%% Corticothalamic 3-Neuron Microcircuit with T-type Ca2+ Channels on TC
 % Demonstrates rebound spiking / anode-break excitation on the TC relay neuron
 % after TRN-driven inhibition, using T-type calcium and H-current kinetics.
 %
