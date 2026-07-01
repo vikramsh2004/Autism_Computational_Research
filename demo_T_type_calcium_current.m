@@ -159,4 +159,23 @@ function shade_epoch(t_on, t_off, label_text)
     uistack(findobj(gca, 'Type', 'line'), 'top')
 end
 
-% T-type / H-current kinetics: mInf_T.m, hInf_T.m, tauH_T.m, rInf_H.m, tauR_H.m
+function val = mInf_T(V)
+    val = 1 ./ (1 + exp(-(V + 52) / 7.4));
+end
+
+function val = hInf_T(V)
+    val = 1 ./ (1 + exp((V + 80) / 5));
+end
+
+function val = tauH_T(V)
+    val = 28 + exp(-(V + 22) / 10.5);
+    val(V < -80) = exp((V(V < -80) + 467) / 66.6);
+end
+
+function val = rInf_H(V)
+    val = 1 ./ (1 + exp((V + 75) / 5.5));
+end
+
+function tau = tauR_H(V)
+    tau = 20 + 200 ./ (exp((V + 75) / 10) + exp(-(V + 75) / 10));
+end
