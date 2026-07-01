@@ -28,7 +28,7 @@ gL_Ctx = 0.1;  EL_Ctx = -65;
 % TC relay neuron (HH + T-type Ca2+ + H-current)
 gNa_TC = 120; ENa_TC = 50;
 gK_TC = 36;  EK_TC = -77;
-gL_TC = 0.15; EL_TC = -54.4;  % reduced leak — allows deeper TRN-driven hyperpolarization
+gL_TC = 0.3;  EL_TC = -54.4;
 gT_TC = 1.2;  ECa = 120;   % mS/cm^2, mV — T-type Ca2+ (slightly above isolated demo)
 gH_TC = 0.05; EH = -43;    % mS/cm^2, mV — H-current supports rebound with I_T
 
@@ -44,10 +44,8 @@ I_ext_TC = zeros(1, nt);
 I_ext_TRN = zeros(1, nt);
 I_ext_Ctx = zeros(1, nt);
 
-% TRN inhibition protocol (drives sustained GABA onto TC)
-trn_inhib_on = 150;   % ms
-trn_inhib_off = 250;  % ms
-I_ext_TRN(time >= trn_inhib_on & time < trn_inhib_off) = 10;
+% Prolonged TRN drive (deep hyperpolarization of TC via GABA from TRN spikes)
+I_ext_TRN(time >= 150 & time < 180) = 10;
 
 % Rebound TC drive intentionally disabled — observe pure I_T-mediated rebound
 % I_ext_TC(time >= 180 & time < 300) = 8;
@@ -67,9 +65,8 @@ g_AMPA_TC_TRN  = 0.18; g_NMDA_TC_TRN  = 0.12;
 g_AMPA_TC_Ctx  = 0.15; g_NMDA_TC_Ctx  = 0.10;
 g_AMPA_Ctx_TC  = 0.16; g_NMDA_Ctx_TC  = 0.11;
 g_AMPA_Ctx_TRN = 0.14; g_NMDA_Ctx_TRN = 0.09;
-g_GABAa_TRN_TC = 1.80; g_GABAb_TRN_TC = 0.00;
-% Strong GABA_A hyperpolarizes TC ~10 mV below prior level (~-78 mV) so I_H can build
-% during the pulse; GABA_B disabled (slow GABAB masks rebound)
+g_GABAa_TRN_TC = 0.35; g_GABAb_TRN_TC = 0.00;
+% GABA_A tuned for deep TC hyperpolarization; GABA_B disabled (slow GABAB masks rebound)
 
 %% State variables
 v_Ctx = -65 * ones(1, nt); v_TC = -65 * ones(1, nt); v_TRN = -65 * ones(1, nt);
@@ -242,20 +239,16 @@ I_GABAa_TRN_TC(end) = g_GABAa_TRN_TC * r_GABAa_TC(end) * (E_GABAa - v_TC(end));
 I_GABAb_TRN_TC(end) = g_GABAb_TRN_TC * gprotein_channel_open(G_GABAb_TC(end), n_GABAb, KD_GABAb) * (E_GABAb - v_TC(end));
 
 %% Metrics
-inhib_mask = time >= trn_inhib_on & time < trn_inhib_off;
-post_inhib_mask = time >= trn_inhib_off;
+post_inhib_mask = time >= 180;
 tc_rebound_spikes = sum(TC_spike_events & post_inhib_mask);
 [~, peak_it_idx] = max(I_T_TC(post_inhib_mask));
 post_inhib_times = time(post_inhib_mask);
 
 fprintf('--- Spike Metrics ---\n');
 fprintf('Ctx spikes: %d | TC spikes: %d | TRN spikes: %d\n', sum(Ctx_spike_events), sum(TC_spike_events), sum(TRN_spike_events));
-fprintf('TC rebound spikes (t >= %.0f ms): %d\n', trn_inhib_off, tc_rebound_spikes);
+fprintf('TC rebound spikes (t >= 180 ms): %d\n', tc_rebound_spikes);
 fprintf('Peak TC I_T after inhibition: %.3f uA/cm^2 at t = %.1f ms\n', max(I_T_TC(post_inhib_mask)), post_inhib_times(peak_it_idx));
-fprintf('Min TC voltage during TRN drive: %.1f mV\n', min(v_TC(inhib_mask)));
-fprintf('Peak TC I_H during TRN drive: %.3f uA/cm^2\n', max(I_H_TC(inhib_mask)));
-fprintf('TC I_H at inhibition onset vs offset: %.3f -> %.3f uA/cm^2\n', ...
-    I_H_TC(find(time >= trn_inhib_on, 1, 'first')), I_H_TC(find(time >= trn_inhib_off, 1, 'first')));
+fprintf('Min TC voltage during TRN drive: %.1f mV\n', min(v_TC(time >= 150 & time < 200)));
 
 %% Microcircuit figure
 figure('Name', '3-Neuron Microcircuit — T-type Rebound', 'Color', 'w', 'Position', [100 100 800 650]);
@@ -272,8 +265,8 @@ plot(time, v_Ctx, 'g', 'LineWidth', 1.2, 'DisplayName', 'Cortical (Ctx)'); hold 
 plot(time, v_TC, 'r', 'LineWidth', 1.2, 'DisplayName', 'Thalamic (TC)')
 plot(time, v_TRN, 'b', 'LineWidth', 1.2, 'DisplayName', 'Reticular (TRN)')
 line([0 t_end], [spike_threshold spike_threshold], 'Color', 'k', 'LineStyle', ':', 'DisplayName', 'Threshold')
-xline(trn_inhib_on, 'Color', [0.5 0.5 0.5], 'LineStyle', '--', 'HandleVisibility', 'off')
-xline(trn_inhib_off, 'Color', [0.5 0.5 0.5], 'LineStyle', '--', 'HandleVisibility', 'off')
+xline(150, 'Color', [0.5 0.5 0.5], 'LineStyle', '--', 'HandleVisibility', 'off')
+xline(180, 'Color', [0.5 0.5 0.5], 'LineStyle', '--', 'HandleVisibility', 'off')
 title('Membrane Potentials (TC rebound after TRN inhibition release)')
 xlabel('Time (ms)'); ylabel('V_m (mV)'); legend('Location', 'best'); grid on
 
