@@ -302,12 +302,10 @@ legend('h_T', 'm_{\infty,T}', 'Location', 'best')
 grid on
 
 subplot(4, 1, 4)
-plot(time, I_H_TC, 'Color', [0.2 0.6 0.2], 'LineWidth', 1.2); hold on
-plot(time, I_GABAa_TRN_TC + I_GABAb_TRN_TC, 'b', 'LineWidth', 1.0)
+plot(time, I_H_TC, 'Color', [0.2 0.6 0.2], 'LineWidth', 1.2)
 xlabel('Time (ms)')
-ylabel('Current (\muA/cm^2)')
-title('H-current (green) and net TRN GABA inhibition (blue)')
-legend('I_H', 'I_{GABA,TRN\rightarrowTC}', 'Location', 'best')
+ylabel('I_H (\muA/cm^2)')
+title('H-current on TC')
 grid on
 
 %% Helper functions
