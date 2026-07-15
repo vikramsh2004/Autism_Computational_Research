@@ -65,6 +65,10 @@ I_NMDA_WT_arr = zeros(1,N); I_NMDA_SH_arr = zeros(1,N);
 I_T_WT_arr = zeros(1,N);    I_T_SH_arr = zeros(1,N);
 I_h_WT_arr = zeros(1,N);    I_h_SH_arr = zeros(1,N);
 
+% Arrays to store inactivation gates (drive the post-inhibitory rebound)
+hNa_WT_arr = zeros(1,N); hNa_SH_arr = zeros(1,N); % Na+ inactivation gate h
+uT_WT_arr  = zeros(1,N); uT_SH_arr  = zeros(1,N); % T-type Ca2+ inactivation gate u
+
 %% 5. Main Euler Integration Loop
 for i = 1:N-1
     
@@ -147,7 +151,14 @@ for i = 1:N-1
     I_NMDA_WT_arr(i) = I_NMDA_WT; I_NMDA_SH_arr(i) = I_NMDA_SH;
     I_T_WT_arr(i) = I_T_W;        I_T_SH_arr(i) = I_T_S;
     I_h_WT_arr(i) = I_h_W;        I_h_SH_arr(i) = I_h_S;
+    hNa_WT_arr(i) = h_WT;         hNa_SH_arr(i) = h_SH;
+    uT_WT_arr(i)  = u_WT;         uT_SH_arr(i)  = u_SH;
 end
+
+% Carry the final gate sample forward (loop stores up to N-1) so the traces
+% do not dip to zero at the last time point.
+hNa_WT_arr(N) = hNa_WT_arr(N-1); hNa_SH_arr(N) = hNa_SH_arr(N-1);
+uT_WT_arr(N)  = uT_WT_arr(N-1);  uT_SH_arr(N)  = uT_SH_arr(N-1);
 
 %% 6. Plotting the Results
 % Wild-Type and SHANK3 KO are shown on SEPARATE plots (no overlay):
@@ -164,7 +175,7 @@ pad_lim = @(d) [min(d(:)), max(d(:))] + [-1, 1] * max(0.05*(max(d(:))-min(d(:)))
 I_inj_lim  = pad_lim(I_inj);
 V_lim      = pad_lim([V_WT, V_SH]);
 I_int_lim  = pad_lim([I_h_WT_arr, I_h_SH_arr, I_T_WT_arr, I_T_SH_arr]);
-I_nmda_lim = pad_lim([I_NMDA_WT_arr, I_NMDA_SH_arr]);
+gate_lim   = [-0.05, 1.05]; % inactivation gates are bounded in [0, 1]
 
 % Pulse timing/amplitude for annotating the stimulus panels
 pulse_on   = find(I_inj ~= 0, 1, 'first');
@@ -219,20 +230,22 @@ title('Intrinsic Currents (SHANK3 KO)');
 ylabel('Current (\muA/cm^2)'); ylim(I_int_lim); grid on;
 legend('Ih (SHANK3) - Loss of Leak', 'IT (SHANK3) - Rebound Burst');
 
-% 6.4 NMDA Current -- Wild-Type
+% 6.4 Inactivation Gates (de-inactivation drives the rebound) -- Wild-Type
 subplot(4,2,7);
-plot(time, I_NMDA_WT_arr, 'g', 'LineWidth', 1.5);
-title('NMDA Current (Wild-Type)');
-xlabel('Time (ms)'); ylabel('Current (\muA/cm^2)');
-ylim(I_nmda_lim); xlim([140 250]); grid on;
-legend('NMDA (WT)');
+plot(time, hNa_WT_arr, 'b', 'LineWidth', 1.4); hold on;
+plot(time, uT_WT_arr, 'r', 'LineWidth', 1.4);
+title('Inactivation Gates (Wild-Type)');
+xlabel('Time (ms)'); ylabel('Gate (0-1)');
+ylim(gate_lim); grid on;
+legend('h : Na^+ inactivation', 'u : T-type Ca^{2+} inactivation', 'Location', 'east');
 
-% 6.4b NMDA Current -- SHANK3 KO
+% 6.4b Inactivation Gates (de-inactivation drives the rebound) -- SHANK3 KO
 subplot(4,2,8);
-plot(time, I_NMDA_SH_arr, 'g', 'LineWidth', 1.5);
-title('NMDA Current & Mg2+ Block Failure (SHANK3 KO)');
-xlabel('Time (ms)'); ylabel('Current (\muA/cm^2)');
-ylim(I_nmda_lim); xlim([140 250]); grid on;
-legend('NMDA (SHANK3) - Starved of Voltage');
+plot(time, hNa_SH_arr, 'b', 'LineWidth', 1.4); hold on;
+plot(time, uT_SH_arr, 'r', 'LineWidth', 1.4);
+title('Inactivation Gates (SHANK3 KO)');
+xlabel('Time (ms)'); ylabel('Gate (0-1)');
+ylim(gate_lim); grid on;
+legend('h : Na^+ inactivation', 'u : T-type Ca^{2+} inactivation', 'Location', 'east');
 
 disp('Simulation Complete. Observing plots...');
