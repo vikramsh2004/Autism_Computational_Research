@@ -154,58 +154,81 @@ end
 %   Left  column  -> Wild-Type
 %   Right column  -> SHANK3 KO
 % Each row shares the same y-axis limits so the two genotypes stay
-% directly comparable side-by-side.
-figure('Name', 'SHANK3 Biophysical Simulation', 'Position', [100, 100, 1100, 750]);
+% directly comparable side-by-side. Row 1 shows the injected stimulus
+% (the hyperpolarizing current: its duration and magnitude).
+figure('Name', 'SHANK3 Biophysical Simulation', 'Position', [100, 100, 1100, 850]);
 
 % ---- Shared y-limits per row (computed so both panels use one scale) ----
 % pad_lim() adds a 5% margin (min 1 unit) so paired panels use one y-scale.
 pad_lim = @(d) [min(d(:)), max(d(:))] + [-1, 1] * max(0.05*(max(d(:))-min(d(:))), 1);
+I_inj_lim  = pad_lim(I_inj);
 V_lim      = pad_lim([V_WT, V_SH]);
 I_int_lim  = pad_lim([I_h_WT_arr, I_h_SH_arr, I_T_WT_arr, I_T_SH_arr]);
 I_nmda_lim = pad_lim([I_NMDA_WT_arr, I_NMDA_SH_arr]);
 
-% 6.1 Membrane Voltage -- Wild-Type
-subplot(3,2,1);
+% Pulse timing/amplitude for annotating the stimulus panels
+pulse_on   = find(I_inj ~= 0, 1, 'first');
+pulse_off  = find(I_inj ~= 0, 1, 'last');
+pulse_amp  = I_inj(pulse_on);
+pulse_dur  = time(pulse_off) - time(pulse_on);
+pulse_txt  = sprintf('%.1f \\muA/cm^2  for  %.0f ms', pulse_amp, pulse_dur);
+
+% 6.1 Injected Stimulus -- Wild-Type
+subplot(4,2,1);
+plot(time, I_inj, 'm', 'LineWidth', 1.5);
+title('Injected Current: Wild-Type');
+ylabel('I_{inj} (\muA/cm^2)'); ylim(I_inj_lim); grid on;
+text(time(pulse_on), pulse_amp/2, [' \leftarrow ' pulse_txt], 'FontSize', 9);
+
+% 6.1b Injected Stimulus -- SHANK3 KO
+subplot(4,2,2);
+plot(time, I_inj, 'm', 'LineWidth', 1.5);
+title('Injected Current: SHANK3 KO');
+ylabel('I_{inj} (\muA/cm^2)'); ylim(I_inj_lim); grid on;
+text(time(pulse_on), pulse_amp/2, [' \leftarrow ' pulse_txt], 'FontSize', 9);
+
+% 6.2 Membrane Voltage -- Wild-Type
+subplot(4,2,3);
 plot(time, V_WT, 'k', 'LineWidth', 1.5);
 title('Membrane Voltage: Wild-Type');
 ylabel('Voltage (mV)'); ylim(V_lim); grid on;
 text(50, V_lim(1)+3, '\leftarrow Hyperpolarizing Pulse', 'FontSize', 9);
 text(112, V_lim(2)-8, '\leftarrow Rebound Spike', 'FontSize', 9);
 
-% 6.1b Membrane Voltage -- SHANK3 KO
-subplot(3,2,2);
+% 6.2b Membrane Voltage -- SHANK3 KO
+subplot(4,2,4);
 plot(time, V_SH, 'r', 'LineWidth', 1.5);
 title('Membrane Voltage: SHANK3 KO (Hyperexcitable)');
 ylabel('Voltage (mV)'); ylim(V_lim); grid on;
 text(50, V_lim(1)+3, '\leftarrow Hyperpolarizing Pulse', 'FontSize', 9);
 text(112, V_lim(2)-8, '\leftarrow Rebound Burst', 'FontSize', 9);
 
-% 6.2 Intrinsic Currents (Ih and IT) -- Wild-Type
-subplot(3,2,3);
+% 6.3 Intrinsic Currents (Ih and IT) -- Wild-Type
+subplot(4,2,5);
 plot(time, I_h_WT_arr, 'k', 'LineWidth', 1.2); hold on;
 plot(time, I_T_WT_arr, 'b', 'LineWidth', 1.2);
 title('Intrinsic Currents (Wild-Type)');
 ylabel('Current (\muA/cm^2)'); ylim(I_int_lim); grid on;
 legend('Ih (WT)', 'IT (WT)');
 
-% 6.2b Intrinsic Currents (Ih and IT) -- SHANK3 KO
-subplot(3,2,4);
+% 6.3b Intrinsic Currents (Ih and IT) -- SHANK3 KO
+subplot(4,2,6);
 plot(time, I_h_SH_arr, 'k', 'LineWidth', 1.2); hold on;
 plot(time, I_T_SH_arr, 'b', 'LineWidth', 1.2);
 title('Intrinsic Currents (SHANK3 KO)');
 ylabel('Current (\muA/cm^2)'); ylim(I_int_lim); grid on;
 legend('Ih (SHANK3) - Loss of Leak', 'IT (SHANK3) - Rebound Burst');
 
-% 6.3 NMDA Current -- Wild-Type
-subplot(3,2,5);
+% 6.4 NMDA Current -- Wild-Type
+subplot(4,2,7);
 plot(time, I_NMDA_WT_arr, 'g', 'LineWidth', 1.5);
 title('NMDA Current (Wild-Type)');
 xlabel('Time (ms)'); ylabel('Current (\muA/cm^2)');
 ylim(I_nmda_lim); xlim([140 250]); grid on;
 legend('NMDA (WT)');
 
-% 6.3b NMDA Current -- SHANK3 KO
-subplot(3,2,6);
+% 6.4b NMDA Current -- SHANK3 KO
+subplot(4,2,8);
 plot(time, I_NMDA_SH_arr, 'g', 'LineWidth', 1.5);
 title('NMDA Current & Mg2+ Block Failure (SHANK3 KO)');
 xlabel('Time (ms)'); ylabel('Current (\muA/cm^2)');
