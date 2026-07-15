@@ -40,9 +40,14 @@ tau_AMPA = 2;
 % We apply a hyperpolarizing pulse to observe input resistance and Ih,
 % followed by a burst of excitatory synaptic inputs.
 I_inj = zeros(1, N);
-I_inj(time > 30 & time < 100) = -2.0; % Hyperpolarizing pulse
+% Deeper hyperpolarizing pulse: it must be strong enough to de-inactivate
+% the Na+ (h) and T-type Ca2+ (u) channels so the Wild-Type neuron fires a
+% post-inhibitory REBOUND spike when the pulse is released at 100 ms.
+I_inj(time > 30 & time < 100) = -6.0; % Hyperpolarizing pulse
 
-spike_times = [150, 160, 170]; % Excitatory synaptic input times (ms)
+% Excitatory synaptic inputs disabled for now: this protocol studies only
+% the response to the hyperpolarizing pulse (post-inhibitory rebound).
+spike_times = []; % (was [150, 160, 170] ms)
 
 %% 4. Initialization Arrays
 V_WT = -65 * ones(1, N); V_SH = -65 * ones(1, N);
@@ -165,7 +170,7 @@ plot(time, V_WT, 'k', 'LineWidth', 1.5);
 title('Membrane Voltage: Wild-Type');
 ylabel('Voltage (mV)'); ylim(V_lim); grid on;
 text(50, V_lim(1)+3, '\leftarrow Hyperpolarizing Pulse', 'FontSize', 9);
-text(150, V_lim(2)-8, '\leftarrow Synaptic Burst', 'FontSize', 9);
+text(112, V_lim(2)-8, '\leftarrow Rebound Spike', 'FontSize', 9);
 
 % 6.1b Membrane Voltage -- SHANK3 KO
 subplot(3,2,2);
@@ -173,7 +178,7 @@ plot(time, V_SH, 'r', 'LineWidth', 1.5);
 title('Membrane Voltage: SHANK3 KO (Hyperexcitable)');
 ylabel('Voltage (mV)'); ylim(V_lim); grid on;
 text(50, V_lim(1)+3, '\leftarrow Hyperpolarizing Pulse', 'FontSize', 9);
-text(150, V_lim(2)-8, '\leftarrow Synaptic Burst', 'FontSize', 9);
+text(112, V_lim(2)-8, '\leftarrow Rebound Burst', 'FontSize', 9);
 
 % 6.2 Intrinsic Currents (Ih and IT) -- Wild-Type
 subplot(3,2,3);
