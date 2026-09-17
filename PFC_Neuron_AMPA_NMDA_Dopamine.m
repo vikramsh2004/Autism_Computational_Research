@@ -63,13 +63,16 @@ for i = 1:N-1
     % SYNAPTIC CURRENTS (Modulated by D1mod)
     B_V = 1 / (1 + (Mg / 3.57) * exp(-0.062 * V(i)));
     
-    I_AMPA(i) = g_AMPA * r_AMPA(i) * (V(i) - E_syn) * D1mod;
-    I_NMDA(i) = g_NMDA * r_NMDA(i) * B_V * (V(i) - E_syn) * D1mod; 
+    % EPSCs written as positive (inward) currents: (E_syn - V) instead of (V - E_syn)
+    I_AMPA(i) = g_AMPA * r_AMPA(i) * (E_syn - V(i)) * D1mod;
+    I_NMDA(i) = g_NMDA * r_NMDA(i) * B_V * (E_syn - V(i)) * D1mod; 
     I_Total_syn = I_AMPA(i) + I_NMDA(i);
     
     % MEMBRANE VOLTAGE UPDATE (Passive Leak + Synaptic Currents Only)
+    % I_Total_syn is now positive/depolarizing, so it is ADDED here to keep
+    % the membrane dynamics identical to the original sign convention.
     I_leak = g_L * (V(i) - E_L);
-    dV = (-I_leak - I_Total_syn) / C;
+    dV = (-I_leak + I_Total_syn) / C;
     V(i+1) = V(i) + dt * dV;
     
     % Decrement counters
