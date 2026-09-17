@@ -2,7 +2,12 @@
 % Runs both the AMPA and NMDA synapse models on a shared time base and
 % overlays their comparable traces (neurotransmitter pulse, receptor open
 % fraction, and EPSC) on the same axes so they can be compared visually.
+% The NMDA current here is computed WITHOUT the magnesium block.
 clear; clc
+
+%% Distinct colors so AMPA and NMDA are easy to tell apart in every panel
+col_AMPA = [0.00 0.45 0.74];   % blue
+col_NMDA = [0.85 0.33 0.10];   % orange-red
 
 %% Simulation setup (shared by both models)
 N_num = 1;
@@ -29,7 +34,6 @@ alpha_NMDA = 0.072; % forward binding rate
 beta_NMDA = 0.015;  % backward unbinding rate
 E_NMDA = 0;         % reversal potential, mV
 g_NMDA = 0.0002;    % maximum conductance
-mg_NMDA = 1;        % external magnesium concentration, mM
 
 %% Neurotransmitter pulses (identical timing for both)
 nt_AMPA = zeros(N_num, loop);
@@ -48,7 +52,6 @@ r_AMPA = zeros(N_num, loop);
 I_AMPA = zeros(N_num, loop);
 
 r_NMDA = zeros(N_num, loop);
-B_NMDA = zeros(N_num, loop);
 I_NMDA = zeros(N_num, loop);
 
 %% Euler method (both models integrated together)
@@ -69,21 +72,15 @@ for i = 1:loop-1
         - beta_NMDA .* r_NMDA(:,i);
     r_NMDA(:,i+1) = r_NMDA(:,i) + dt .* dNMDA_rdt(:,i);
 
-    % Magnesium block
-    B_NMDA(:,i) = ...
-        1 ./ (1 + exp(0.062 .* (-v_post)) .* (mg_NMDA ./ 3.57));
-
-    % NMDA current
+    % NMDA current (magnesium block removed: B = 1)
     I_NMDA(:,i) = ...
-        g_NMDA .* B_NMDA(:,i) .* r_NMDA(:,i) .* (E_NMDA - v_post);
+        g_NMDA .* r_NMDA(:,i) .* (E_NMDA - v_post);
 
 end
 
-% Fill final magnesium block and current values for plotting.
-B_NMDA(:,end) = ...
-    1 ./ (1 + exp(0.062 .* (-v_post)) .* (mg_NMDA ./ 3.57));
+% Fill final current value for plotting (no magnesium block).
 I_NMDA(:,end) = ...
-    g_NMDA .* B_NMDA(:,end) .* r_NMDA(:,end) .* (E_NMDA - v_post);
+    g_NMDA .* r_NMDA(:,end) .* (E_NMDA - v_post);
 
 %% Plot: AMPA and NMDA overlaid on shared axes
 figure
@@ -91,9 +88,9 @@ set(gcf, 'Name', 'AMPA vs NMDA EPSC (Overlay)', 'Color', 'w');
 
 % Panel 1: Neurotransmitter pulse
 subplot(3,1,1)
-plot(time, nt_AMPA, 'k', 'LineWidth', 1.5, 'DisplayName', 'AMPA NT')
+plot(time, nt_AMPA, 'Color', col_AMPA, 'LineWidth', 1.5, 'DisplayName', 'AMPA NT')
 hold on
-plot(time, nt_NMDA, 'r--', 'LineWidth', 1.5, 'DisplayName', 'NMDA NT')
+plot(time, nt_NMDA, '--', 'Color', col_NMDA, 'LineWidth', 1.5, 'DisplayName', 'NMDA NT')
 title('Neurotransmitter Pulse')
 xlabel('Time (ms)')
 ylabel('NT concentration')
@@ -102,22 +99,22 @@ grid on
 
 % Panel 2: Receptor open fraction
 subplot(3,1,2)
-plot(time, r_AMPA, 'r', 'LineWidth', 1.5, 'DisplayName', 'r_{AMPA}')
+plot(time, r_AMPA, 'Color', col_AMPA, 'LineWidth', 1.5, 'DisplayName', 'r_{AMPA}')
 hold on
-plot(time, r_NMDA, 'm', 'LineWidth', 1.5, 'DisplayName', 'r_{NMDA}')
+plot(time, r_NMDA, 'Color', col_NMDA, 'LineWidth', 1.5, 'DisplayName', 'r_{NMDA}')
 title('Receptor Open Fraction')
 xlabel('Time (ms)')
 ylabel('r')
 legend('show')
 grid on
 
-% Panel 3: EPSC current
+% Panel 3: EPSC current (NMDA without magnesium block)
 subplot(3,1,3)
-plot(time, I_AMPA, 'b', 'LineWidth', 1.5, 'DisplayName', 'I_{AMPA}')
+plot(time, I_AMPA, 'Color', col_AMPA, 'LineWidth', 1.5, 'DisplayName', 'I_{AMPA}')
 hold on
-plot(time, I_NMDA, 'Color', [0.3 0.1 0.7], 'LineWidth', 1.5, 'DisplayName', 'I_{NMDA}')
+plot(time, I_NMDA, 'Color', col_NMDA, 'LineWidth', 1.5, 'DisplayName', 'I_{NMDA} (no Mg block)')
 yline(0,'k:', 'HandleVisibility', 'off')
-title('EPSC (AMPA vs NMDA)')
+title('EPSC (AMPA vs NMDA, no Mg block)')
 xlabel('Time (ms)')
 ylabel('Current')
 legend('show')
