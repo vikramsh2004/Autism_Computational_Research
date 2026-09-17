@@ -13,6 +13,7 @@ r_pre_DA = 0;             % Background Dopamine firing rate (Hz) normally at 40
 release_steps = round(1/dt); % release duration
 counter_Glu = 0;           
 counter_DA = 0;
+glu_onset_step = round(1/dt); % force a Glutamate release at t = 1 ms so the EPSC starts there
 
 % 3. MEMBRANE & CHANNEL PARAMETERS
 C = 1.0;                   
@@ -41,6 +42,10 @@ D1 = zeros(1, N);          % Dopamine pooled concentration (nM)
 for i = 1:N-1
     % INPUT GENERATORS (Glutamate)
     if poissrnd(r_pre_Glu * (dt/1000)) > 0
+        counter_Glu = release_steps;
+    end
+    % Force a Glutamate release at t = 1 ms so the EPSC onset starts at 1 ms
+    if i == glu_onset_step
         counter_Glu = release_steps;
     end
     T_Glu = double(counter_Glu > 0);
