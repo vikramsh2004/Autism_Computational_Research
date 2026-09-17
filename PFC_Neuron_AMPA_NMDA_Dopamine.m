@@ -1,20 +1,15 @@
 % PFC Neuron: AMPA/NMDA Synaptic Inputs (Passive Membrane with Dopamine Pooling)
-% Re-running this script overlays the new traces on top of the existing
-% figure instead of opening a fresh window each time.
-
-% Use rng('shuffle') so each run produces a different Poisson realization;
-% with a fixed seed every run would be identical and overlays would coincide.
-rng('shuffle');
+rng(42); 
 
 % 1. SIMULATION PARAMETERS
 dt = 0.01;                 % Time step (ms)
-t_max = 300;               % Total simulation time (ms)
+t_max = 104;               % Total simulation time (ms)
 t = 0:dt:t_max;            
-N = length(t);             
+N = length(t); 
 
 % 2. INPUT PARAMETERS (Poisson Rates)
 r_pre_Glu = 30;            % Background Glutamate rate (Hz)
-r_pre_DA = 40;             % Background Dopamine firing rate (Hz)
+r_pre_DA = 0;             % Background Dopamine firing rate (Hz) normally at 40
 release_steps = round(1/dt); % release duration
 counter_Glu = 0;           
 counter_DA = 0;
@@ -25,11 +20,9 @@ g_L = 0.1;   E_L = -65;
 g_Na = 0;    E_Na = 50;    % Set to 0 
 g_K  = 0;    E_K = -77;    % Set to 0
 E_syn = 0;   Mg = 1.0;                  
-
 % Synaptic Base Conductances
-g_AMPA = 0.30;  alpha_AMPA = 1.1;   beta_AMPA = 0.5;         
-g_NMDA = 0.20;  alpha_NMDA = 0.072; beta_NMDA = 0.015;       
-
+g_AMPA = 0.1;  alpha_AMPA = 1.1;   beta_AMPA = 1;         
+g_NMDA = 0.05;  alpha_NMDA = 0.0072; beta_NMDA = 0.03;       
 % Dopamine (D1) Parameters
 B_D1 = 0.1;                % Scaling coefficient for DA release
 tau = 50;                  % Decay time constant for D1 (ms)
@@ -98,7 +91,6 @@ else
     fig = fig(1);
     figure(fig);   % bring existing figure to the front / make current
 end
-
 % Track how many times the script has been run against this figure and pick
 % a distinct color for each run so overlaid traces are distinguishable.
 runCount = getappdata(fig, 'runCount');
@@ -107,40 +99,19 @@ if isempty(runCount)
 end
 runCount = runCount + 1;
 setappdata(fig, 'runCount', runCount);
-
 colorOrder = lines(7);
 runColor = colorOrder(mod(runCount - 1, size(colorOrder, 1)) + 1, :);
 runLabel = sprintf('Run %d', runCount);
-
-% Panel 1: Sub-threshold Membrane Potential (EPSPs)
-subplot(4,1,1);
-hold on;
-plot(t, V, 'Color', runColor, 'LineWidth', 1.2, 'DisplayName', runLabel);
-title('Membrane Potential (Sub-threshold EPSPs)');
-ylabel('Voltage (mV)');
-legend('show');
-grid on;
-
-% Panel 2: Dopamine Pooling Over Time
-subplot(4,1,2);
-hold on;
-plot(t, D1, 'Color', runColor, 'LineWidth', 1.2, 'DisplayName', runLabel);
-title('Dopamine Pooling Concentration (D1)');
-ylabel('Concentration (nM)');
-legend('show');
-grid on;
-
-% Panel 3: AMPA EPSC
-subplot(4,1,3);
+% Panel 1: AMPA EPSC
+subplot(2,1,1);
 hold on;
 plot(t, I_AMPA, 'Color', runColor, 'LineWidth', 1.2, 'DisplayName', runLabel);
 title('AMPA EPSC');
 ylabel('Current');
 legend('show');
 grid on;
-
-% Panel 4: NMDA EPSC
-subplot(4,1,4);
+% Panel 2: NMDA EPSC
+subplot(2,1,2);
 hold on;
 plot(t, I_NMDA, 'Color', runColor, 'LineWidth', 1.2, 'DisplayName', runLabel);
 title('NMDA EPSC');
